@@ -22,7 +22,7 @@ jobs:
       - name: Deploy to AWS
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /home/ubuntu/AWS-Portfolio-Project/app.py
+            cd /home/ubuntu/AWS-Portfolio-Project
             git pull origin main
             pip install -r requirements.txt
             sudo systemctl restart myapp.service
