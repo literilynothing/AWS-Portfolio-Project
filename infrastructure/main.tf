@@ -23,6 +23,28 @@ data "aws_ami" "ubuntu" {
   }
 }
 
+resource "aws_security_group" "app_sg" {
+  name        = "app_security_group"
+  description = "Allow SSH and HTTP traffic"
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+
+  }
+
+}
+
 resource "aws_instance" "app_server_1" {
   ami           = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
