@@ -1,15 +1,18 @@
 name: Deploy to AWS
 
+# Defines the event that triggers the workflow
 on:
   push:
     branches:
       - main
       - dev
 
+# Deploy job
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest\
 
+# Defines the steps to deploy the application to AWS    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
