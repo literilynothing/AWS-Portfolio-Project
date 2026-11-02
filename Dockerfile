@@ -2,10 +2,10 @@
 FROM python:3.12-slim
 
 # Set the working directory
-WORKDIR /app
+WORKDIR /src
 
 # Install dependencies
-COPY requirements.txt .
+COPY src/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create a non-root user and group for running the application

@@ -1,0 +1,12 @@
+# Version controls
+.gitignore
+.git
+.vscode
+
+# Infrastructure & CI/CD 
+Dockerfile
+infrastructure/*
+.github/*
+
+# Documentation
+README.md
