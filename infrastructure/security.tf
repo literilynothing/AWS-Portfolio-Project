@@ -8,7 +8,7 @@ resource "aws_security_group" "app_sg" {
   description = "Allow SSH and HTTP traffic"
 
 
-#Set up ingress rules to allow SSH and HTTP traffic
+  #Set up ingress rules to allow SSH and HTTP traffic
   ingress {
     description = "Allow SSH traffic"
     from_port   = 22
@@ -27,7 +27,7 @@ resource "aws_security_group" "app_sg" {
 
   }
 
-#Set up egress rules to allow outbound traffic
+  #Set up egress rules to allow outbound traffic
   egress {
     from_port   = 0
     to_port     = 0

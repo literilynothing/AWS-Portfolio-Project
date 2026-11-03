@@ -1,10 +1,23 @@
 terraform {
   required_version = ">= 1.5.0"
 }
-resource "aws_iam_user" "app_user" {
-  name = "appdev"
+resource "aws_iam_role" "ec2_role" {
+  name = "ec2_role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
 }
-resource "aws_iam_user_policy_attachment" "app_user_attachment" {
-  user       = aws_iam_user.app_user.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2FullAccess"
+
+resource "aws_iam_instance_profile" "ec2_profile" {
+  name = "ec2_instance_profile"
+  role = aws_iam_role.ec2_role.name
 }
