@@ -10,9 +10,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Create a non-root user and group for running the application
 RUN groupadd -g 1000 appgroup && useradd -r -u 1000 -g appgroup appuser
-COPY --chown=appuser:appgroup . .
+COPY --chown=appuser:appgroup src/ .
 USER appuser:appgroup
 
 # Expose the port the app uses and defines the command to run the application
-EXPOSE 8000
+EXPOSE 80
 CMD ["python", "app.py"]

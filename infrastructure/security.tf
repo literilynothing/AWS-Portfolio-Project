@@ -29,6 +29,7 @@ resource "aws_security_group" "app_sg" {
 
   #Set up egress rules to allow outbound traffic
   egress {
+    description = "Allow all outbound traffic"
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
