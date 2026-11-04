@@ -10,22 +10,56 @@ on:
 # Deploy job
 jobs:
   deploy:
-    runs-on: ubuntu-latest\
+    runs-on: ubuntu-latest
 
-# Defines the steps to deploy the application to AWS    
+# Check out the code from the repository-------------------------
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up SSH Key
-        uses: webfactory/ssh-agent@v0.7.0
+# Log in to Docker Hub
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+# Build and push the Docker image to Docker Hub-------------------
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aws-portfolio-project:${{ github.sha }}
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aws-portfolio-project:latest
+
+# Set up SSH key for deploying to EC2-----------------------------
+      - name: Set up SSH key
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to AWS
+# Deploys the container to EC2
+      - name: Deploy container to EC2
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aws-portfolio-project:${{ github.sha }}
         run: |
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
-            cd /home/ubuntu/AWS-Portfolio-Project
-            git pull origin main
-            pip install -r requirements.txt
-            sudo systemctl restart myapp.service
+          ssh -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" "IMAGE='$IMAGE' bash -s" <<'EOF'
+            set -euo pipefail
+
+            if ! command -v docker >/dev/null 2>&1; then
+              sudo apt-get update
+              sudo apt-get install -y docker.io
+            fi
+
+            sudo docker pull "$IMAGE"
+            sudo docker rm -f my-app 2>/dev/null || true
+            sudo docker run -d \
+              --name my-app \
+              --restart unless-stopped \
+              -p 80:80 \
+              "$IMAGE"
+          EOF
