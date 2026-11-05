@@ -1,6 +1,7 @@
 terraform {
   required_version = ">= 1.5.0"
 }
+
 #Set up an EC2 instance for the application server----------------------------
 resource "aws_instance" "app_server_1" {
   ami                    = data.aws_ami.ubuntu.id

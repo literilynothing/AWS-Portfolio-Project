@@ -10,11 +10,26 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
 
 # Check out the code from the repository-------------------------
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+# Configures and validates temporary AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+          
+      - name: Verify AWS credentials
+        run: |
+          aws sts get-caller-identity >/dev/null
+          echo "GitHub Actions authenticated to AWS"
 
 # Log in to Docker Hub
       - name: Log in to Docker Hub
@@ -33,32 +48,54 @@ jobs:
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aws-portfolio-project:${{ github.sha }}
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aws-portfolio-project:latest
 
-# Set up SSH key for deploying to EC2-----------------------------
-      - name: Set up SSH key
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-# Deploys the container to EC2
-      - name: Deploy container to EC2
+# Deploys the Docker image to the EC2 instance via SSM
+      - name: Deploy via SSM
         env:
-          SSH_HOST: ${{ secrets.SSH_HOST }}
-          SSH_USER: ${{ secrets.SSH_USER }}
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
           IMAGE: docker.io/${{ secrets.DOCKERHUB_USERNAME }}/aws-portfolio-project:${{ github.sha }}
+        shell: bash
         run: |
-          ssh -o StrictHostKeyChecking=accept-new "$SSH_USER@$SSH_HOST" "IMAGE='$IMAGE' bash -s" <<'EOF'
-            set -euo pipefail
+          set -euo pipefail
 
-            if ! command -v docker >/dev/null 2>&1; then
-              sudo apt-get update
-              sudo apt-get install -y docker.io
+          PARAMETERS=$(jq -cn --arg image "$IMAGE" '{
+            commands: [
+              "set -euo pipefail",
+              "if ! command -v docker >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y docker.io; fi",
+              "sudo docker pull " + $image,
+              "sudo docker rm -f my-app 2>/dev/null || true",
+              "sudo docker run -d --name my-app --restart unless-stopped -p 80:80 " + $image
+            ]
+          }')
+
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name AWS-RunShellScript \
+            --instance-ids "$INSTANCE_ID" \
+            --parameters "$PARAMETERS" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          for attempt in $(seq 1 60); do
+            if RESULT=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --output json 2>&1); then
+              STATUS=$(jq -r '.Status' <<< "$RESULT")
+              case "$STATUS" in
+                Success)
+                  jq -r '.StandardOutputContent' <<< "$RESULT"
+                  exit 0
+                  ;;
+                Failed|TimedOut|Cancelled|Cancelling)
+                  jq '{Status, StatusDetails, StandardOutputContent, StandardErrorContent}' <<< "$RESULT"
+                  exit 1
+                  ;;
+              esac
+            elif [[ "$RESULT" != *InvocationDoesNotExist* ]]; then
+              echo "$RESULT" >&2
+              exit 1
             fi
+            sleep 5
+          done
 
-            sudo docker pull "$IMAGE"
-            sudo docker rm -f my-app 2>/dev/null || true
-            sudo docker run -d \
-              --name my-app \
-              --restart unless-stopped \
-              -p 80:80 \
-              "$IMAGE"
-          EOF
+          echo "Timed out waiting for the SSM deployment command" >&2
+          exit 1

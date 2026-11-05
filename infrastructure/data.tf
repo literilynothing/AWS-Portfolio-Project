@@ -1,6 +1,7 @@
 terraform {
   required_version = ">= 1.5.0"
 }
+
 #Fetch the latest Ubuntu AMI--------------------------------------------------
 data "aws_ami" "ubuntu" {
   most_recent = true
@@ -11,3 +12,6 @@ data "aws_ami" "ubuntu" {
     values = ["ubuntu/images/hvm-ssd*/ubuntu-noble-24.04-amd64-server-*"]
   }
 }
+
+# Fetch the current AWS account ID------------------------------------------------
+data "aws_caller_identity" "current" {}
