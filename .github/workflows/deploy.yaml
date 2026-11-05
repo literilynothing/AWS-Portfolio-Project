@@ -19,6 +19,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+#Temporarily displays the workflow identity for debugging purposes
+      - name: Show workflow identity
+        run: |
+            echo "Repository: $GITHUB_REPOSITORY"
+            echo "Ref: $GITHUB_REF"
+            echo "Event: $GITHUB_EVENT_NAME"
+
 # Configures and validates temporary AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
