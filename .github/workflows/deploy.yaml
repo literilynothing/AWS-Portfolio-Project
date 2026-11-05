@@ -59,7 +59,7 @@ jobs:
 
           PARAMETERS=$(jq -cn --arg image "$IMAGE" '{
             commands: [
-              "set -eu pipefail",
+              "set -eu",
               "if ! command -v docker >/dev/null 2>&1; then sudo apt-get update && sudo apt-get install -y docker.io; fi",
               "sudo docker pull " + $image,
               "sudo docker rm -f my-app 2>/dev/null || true",
