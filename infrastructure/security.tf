@@ -10,11 +10,11 @@ resource "aws_security_group" "app_sg" {
 
   #Set up ingress rules to allow SSH and HTTP traffic
   ingress {
-    description = "Allow certain SSH traffic"
+    description = "Allow SSH traffic from specific IP"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/32"]
+    cidr_blocks = ["35.145.25.69/32"]
 
   }
 
