@@ -52,7 +52,7 @@ resource "aws_iam_role" "github_actions_deploy" {
       Condition = {
         StringEquals = {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-          "token.actions.githubusercontent.com:sub" = "repo:literilynothing/AWS-Portfolio-Project:ref:refs/heads/main"
+          "token.actions.githubusercontent.com:sub" = "repo:literilynothing@307273757/AWS-Portfolio-Project@1432595243:ref:refs/heads/main"
         }
       }
     }]
